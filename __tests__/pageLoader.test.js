@@ -8,22 +8,31 @@ import nock from 'nock';
 import pageLoader from '../src/pageLoader.js';
 
 const testRootDir = path.join(os.tmpdir(), 'page-loader');
-const testData = {
-  name: 'test1',
-  url: 'https://ru.hexlet.io/courses',
-  expectFileName: 'ru-hexlet-io-courses.html',
-};
-testData.files = [
+const testData = [
+  {
+    name: 'test1',
+    url: 'https://ru.hexlet.io/courses',
+    expectFuctionResult: 'ru-hexlet-io-courses.html',
+  },
+  {
+    name: 'test2',
+    url: 'https://ru.hexlet.io/courses',
+    expectFuctionResult: 'ru-hexlet-io-courses.html',
+  },
+];
+testData[0].files = [
   {
     originalFileName: 'index.html',
     originalDir: '',
-    expectFileName: testData.expectFileName,
+    link: '/courses',
+    expectFileName: 'ru-hexlet-io-courses.html',
     expectDir: '',
     contentType: 'application/json',
   },
   {
     originalFileName: 'nodejs.jpeg',
     originalDir: 'assets/professions',
+    link: '/assets/professions/nodejs.jpeg',
     expectFileName: 'ru-hexlet-io-assets-professions-nodejs.jpeg',
     expectDir: 'ru-hexlet-io-courses_files',
     contentType: 'image/jpeg',
@@ -31,13 +40,58 @@ testData.files = [
   {
     originalFileName: 'nodejs.png',
     originalDir: 'assets/professions',
+    link: '/assets/professions/nodejs.png',
     expectFileName: 'ru-hexlet-io-assets-professions-nodejs.png',
     expectDir: 'ru-hexlet-io-courses_files',
     contentType: 'image/png',
   },
 ];
+testData[1].files = [
+  {
+    originalFileName: 'index.html',
+    originalDir: '',
+    link: '/courses',
+    expectFileName: 'ru-hexlet-io-courses.html',
+    expectDir: '',
+    contentType: 'application/json',
+  },
+  {
+    originalFileName: 'nodejs.png',
+    originalDir: 'assets/professions',
+    link: '/assets/professions/nodejs.png',
+    expectFileName: 'ru-hexlet-io-assets-professions-nodejs.png',
+    expectDir: 'ru-hexlet-io-courses_files',
+    contentType: 'image/png',
+  },
+  {
+    originalFileName: 'application.css',
+    originalDir: 'assets',
+    link: '/assets/application.css',
+    expectFileName: 'ru-hexlet-io-assets-application.css',
+    expectDir: 'ru-hexlet-io-courses_files',
+    contentType: 'application/json',
+  },
+  {
+    originalFileName: 'index1.html',
+    originalDir: 'courses',
+    link: '/courses',
+    expectFileName: 'ru-hexlet-io-courses.html',
+    expectDir: 'ru-hexlet-io-courses_files',
+    contentType: 'application/json',
+  },
+  {
+    originalFileName: 'runtime.js',
+    originalDir: 'packs/js',
+    link: '/packs/js/runtime.js',
+    expectFileName: 'ru-hexlet-io-packs-js-runtime.js',
+    expectDir: 'ru-hexlet-io-courses_files',
+    contentType: 'application/json',
+  },
+];
 let resultFilePath;
-let testDir;
+const testDir = {};
+const scopes = {};
+const fuctionResult = {};
 
 beforeAll(async () => {
   await fs.rmdir(testRootDir, { recursive: true }).catch(_.noop);
@@ -45,29 +99,39 @@ beforeAll(async () => {
   nock.disableNetConnect();
 });
 
-describe(`${testData.name}`, () => {
+describe.each(testData)('$name', ({
+  name,
+  url,
+  expectFuctionResult,
+  files,
+}) => {
   beforeAll(async () => {
-    testDir = await fs.mkdtemp(`${testRootDir}/`);
-    const resolvedUrl = new URL(testData.url);
-    testData.files.forEach(({ originalFileName, originalDir }, i) => {
-      testData.files[i].scope = nock(`${resolvedUrl.origin}`)
-        .get(originalDir === '' ? resolvedUrl.pathname : `/${originalDir}/${originalFileName}`)
-        .replyWithFile(200, path.resolve('__fixtures__', testData.name, 'original', originalDir, originalFileName));
+    testDir[name] = await fs.mkdtemp(`${testRootDir}/`);
+    const resolvedUrl = new URL(url);
+    files.forEach(({ originalFileName, originalDir, link }) => {
+      scopes[name] = [];
+      scopes[name].push(nock(`${resolvedUrl.origin}`)
+        .get(link)
+        .replyWithFile(200, path.resolve('__fixtures__', name, 'original', originalDir, originalFileName)));
     });
-    testData.fuctionResult = await pageLoader(testData.url, testDir);
+    fuctionResult[name] = await pageLoader(url, testDir[name]);
+  });
+
+  afterAll(() => {
+    nock.cleanAll();
   });
 
   test('fuction result', () => {
-    expect(testData.fuctionResult).toEqual(path.resolve(testDir, testData.expectFileName));
+    expect(fuctionResult[name]).toEqual(`Page was successfully downloaded into ${path.resolve(testDir[name], expectFuctionResult)}`);
   });
 
   test('scope', () => {
-    expect(testData.files.every(({ scope }) => scope.isDone())).toBe(true);
+    expect(scopes[name].every((scope) => scope.isDone())).toBe(true);
   });
 
-  describe.each(testData.files)('test file $originalFileName', ({ expectFileName, expectDir }) => {
+  describe.each(files)('test file $originalFileName', ({ expectFileName, expectDir }) => {
     beforeAll(() => {
-      resultFilePath = path.resolve(testDir, expectDir, expectFileName);
+      resultFilePath = path.resolve(testDir[name], expectDir, expectFileName);
     });
 
     test('file exist', async () => {
@@ -78,7 +142,7 @@ describe(`${testData.name}`, () => {
     });
 
     test('equal data', async () => {
-      const modifiedFilePath = path.resolve('__fixtures__', testData.name, 'modified', expectDir, expectFileName);
+      const modifiedFilePath = path.resolve('__fixtures__', name, 'modified', expectDir, expectFileName);
       const resultData = await fs.readFile(resultFilePath, 'utf-8');
       const expectData = await fs.readFile(modifiedFilePath, 'utf-8');
       expect(resultData.replace(/\s/g, '')).toEqual(expectData.replace(/\s/g, ''));

@@ -33,7 +33,7 @@ export default [
     }
 }),
   {
-    ignores: ["eslint.config.js", 'temp.js'],
+    ignores: ["eslint.config.js", 'temp.js', '__fixtures__/*'],
   },
   /* {
     rules: {
