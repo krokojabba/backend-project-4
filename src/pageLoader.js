@@ -1,9 +1,17 @@
-import axios from 'axios';
+// import axios from 'axios';
 import path from 'path';
 import fs from 'fs/promises';
 import * as cheerio from 'cheerio';
 import _ from 'lodash';
 import Listr from 'listr';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+require('axios-debug-log');
+
+const axios = require('axios');
+require('debug');
+const debug = require('debug')('page-loader');
 
 const getFileName = (url) => {
   let rawName;
@@ -21,36 +29,53 @@ const getFileName = (url) => {
 
 const parseHTML = (rawData, parser = cheerio) => parser.load(rawData);
 
-const extractAssetsList = ($, extractProperty) => {
+const extractAssetsList = ($, extractProperty, mainUrl) => {
   const tags = Object.keys(extractProperty);
   return tags.flatMap((tag) => {
     const links = [];
     $(tag).each(function func(/* i, element */) {
-      links.push({
-        tag,
-        link: $(this).attr(extractProperty[tag].attr),
-        attr: extractProperty[tag].attr,
-        responseType: extractProperty[tag].responseType,
-      });
+      const link = $(this).attr(extractProperty[tag].attr);
+      let url;
+      if (link) {
+        try {
+          url = new URL(link);
+        } catch (e) {
+          url = new URL(link, mainUrl.origin);
+        }
+        if (url.host === mainUrl.host) {
+          links.push({
+            tag,
+            link,
+            attr: extractProperty[tag].attr,
+            url,
+            responseType: extractProperty[tag].responseType,
+          });
+        }
+      }
     });
     return links;
   });
 };
 
 const download = (assets, isSilent = true) => {
-  const tasks = assets.flatMap(({ url, responseType, isLokal }) => {
-    if (!isLokal) return [];
+  const tasks = assets.flatMap(({ url, responseType }) => {
     const promise = axios.get(url, { responseType })
-      .then((response) => ({
-        status: 'downloaded',
-        data: response.data,
-        url,
-      }))
-      .catch((e) => ({
-        status: 'download error',
-        error: e,
-        url,
-      }));
+      .then((response) => {
+        debug(`${url} downloaded`);
+        return {
+          status: 'downloaded',
+          data: response.data,
+          url,
+        };
+      })
+      .catch((e) => {
+        debug(`${url} download error: %O`, e);
+        return {
+          status: 'download error',
+          error: e,
+          url,
+        };
+      });
     if (isSilent) return promise;
     return {
       title: url.toString(),
@@ -64,7 +89,11 @@ const download = (assets, isSilent = true) => {
 
 const save = (assets, output) => {
   const promises = assets.flatMap(({ status, data, relativeFilePath }) => {
-    if (status === 'downloaded') return fs.writeFile(path.resolve(output, relativeFilePath), data);
+    if (status === 'downloaded') {
+      return fs.writeFile(path.resolve(output, relativeFilePath), data)
+        .then(() => debug(`${relativeFilePath} is save`))
+        .catch((e) => debug(`${relativeFilePath} isn't save %O`, e));
+    }
     return [];
   });
   return Promise.all(promises);
@@ -116,23 +145,9 @@ const pageLoader = (url, output) => {
       mainFile.error = results[0].error;
       mainFile.status = results[0].status;
       mainFile.resolvedData = parseHTML(mainFile.data);
-      const assetLinks = extractAssetsList(mainFile.resolvedData, extractProperty);
-      // console.log(assetLinks);
-      const assetUrls = assetLinks
-        .map(({ link: assetLink }) => {
-          try {
-            return {
-              url: new URL(assetLink),
-              isLokal: new URL(assetLink).host === mainFile.url.host,
-            };
-          } catch (e) {
-            return {
-              url: new URL(assetLink, mainFile.url.origin),
-              isLokal: true,
-            };
-          }
-        });
-      assets = (_.merge(assetLinks, assetUrls));
+      debug('main page successfully parsed');
+      assets = extractAssetsList(mainFile.resolvedData, extractProperty, mainFile.url);
+      debug(`extract ${assets.length} asset links:\n${JSON.stringify(assets, null, 2)}`);
       return download(assets, false);
     })
     .then((results) => {
@@ -144,7 +159,10 @@ const pageLoader = (url, output) => {
       assets = (_.merge(assets, relativeFilePaths));
       mainFile.resolvedData = modifyAssets(mainFile.resolvedData, assets);
       mainFile.data = mainFile.resolvedData.html();
-      if (assets.some(({ status }) => status === 'downloaded')) return fs.mkdir(path.resolve(output, mainFile.assetsDir));
+      if (assets.some(({ status }) => status === 'downloaded')) {
+        debug(`create assets directory ${mainFile.assetsDir}`);
+        return fs.mkdir(path.resolve(output, mainFile.assetsDir));
+      }
       return Promise.resolve();
     })
     .then(() => {
