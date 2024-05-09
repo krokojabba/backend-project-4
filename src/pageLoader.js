@@ -109,7 +109,7 @@ const makeRelativeFilePaths = (asserts, assetsDir) => asserts
     relativeFilePath: status === 'downloaded' ? `${assetsDir}/${getFileName(url)}` : link,
   }));
 
-const pageLoader = (url, output) => {
+const pageLoader = (url, output = process.cwd()) => {
   const extractProperty = {
     img:
     {

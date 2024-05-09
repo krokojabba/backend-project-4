@@ -200,7 +200,7 @@ describe.each(testData)('$name', ({
         const modifiedFilePath = path.resolve('__fixtures__', name, 'modified', expectDir, expectFileName);
         const resultData = await fs.readFile(resultFilePath, 'utf-8');
         const expectData = await fs.readFile(modifiedFilePath, 'utf-8');
-        expect(resultData/* .replace(/\s/g, '') */).toStrictEqual(expectData/* .replace(/\s/g, '') */);
+        expect(resultData).toStrictEqual(expectData);
       });
     } else {
       test('file not exist', async () => {
