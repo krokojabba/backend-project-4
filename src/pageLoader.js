@@ -90,7 +90,7 @@ const download = (assets, isSilent = true) => {
 const save = (assets, output) => {
   const promises = assets.flatMap(({ status, data, relativeFilePath }) => {
     if (status === 'downloaded') {
-      return fs.writeFile(path.resolve(output, relativeFilePath), data)
+      return fs.writeFile(path.resolve(output, relativeFilePath), data, 'utf-8')
         .then(() => debug(`${relativeFilePath} is save`))
         .catch((e) => debug(`${relativeFilePath} isn't save %O`, e));
     }
@@ -119,18 +119,18 @@ const pageLoader = (url, output) => {
     link:
     {
       attr: 'href',
-      responseType: 'document',
+      responseType: 'arraybuffer',
     },
     script:
     {
       attr: 'src',
-      responseType: 'document',
+      responseType: 'arraybuffer',
     },
   };
 
   const mainFile = {
     url: new URL(url),
-    responseType: 'document',
+    responseType: 'arraybuffer',
     isLokal: true,
   };
 
