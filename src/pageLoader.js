@@ -81,11 +81,6 @@ const download = (assets, isSilent = true) => {
         } else {
           throw new Error(`Error: ${e.message}`);
         }
-        /* return {
-          status: 'download error',
-          error: e,
-          url,
-        }; */
       });
     if (isSilent) return promise;
     return {
@@ -185,7 +180,6 @@ const pageLoader = (url, output = process.cwd()) => {
       return Promise.resolve();
     })
     .then(() => {
-      // console.log([mainFile, ...assets]);
       save([mainFile, ...assets], output);
     })
     .then(() => `Page was successfully downloaded into ${path.resolve(output, mainFile.relativeFilePath)}`)
