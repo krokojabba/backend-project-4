@@ -95,17 +95,11 @@ const download = (assets, isSilent = true) => {
   });
   if (isSilent) return Promise.all(tasks);
   const listrTasks = new Listr(tasks, { concurrent: true, exitOnError: false });
-  return listrTasks.run([]).catch((e) => {
-    // throw new Error(e.message);
-    return e.context;
-  });
+  return listrTasks.run([]).catch((e) => e.context);
 };
 
 const save = (assets, output) => {
   const promises = assets.flatMap(({ status, data, relativeFilePath }) => {
-/*     console.log(status);
-    console.log(data);
-    console.log(relativeFilePath); */
     if (status === 'downloaded') {
       return fs.writeFile(path.resolve(output, relativeFilePath), data, 'utf-8')
         .then(() => debug(`${relativeFilePath} is save`))
