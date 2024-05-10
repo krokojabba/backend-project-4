@@ -103,6 +103,9 @@ const download = (assets, isSilent = true) => {
 
 const save = (assets, output) => {
   const promises = assets.flatMap(({ status, data, relativeFilePath }) => {
+/*     console.log(status);
+    console.log(data);
+    console.log(relativeFilePath); */
     if (status === 'downloaded') {
       return fs.writeFile(path.resolve(output, relativeFilePath), data, 'utf-8')
         .then(() => debug(`${relativeFilePath} is save`))
@@ -188,7 +191,7 @@ const pageLoader = (url, output = process.cwd()) => {
       return Promise.resolve();
     })
     .then(() => {
-      // console.log(assets);
+      // console.log([mainFile, ...assets]);
       save([mainFile, ...assets], output);
     })
     .then(() => `Page was successfully downloaded into ${path.resolve(output, mainFile.relativeFilePath)}`)

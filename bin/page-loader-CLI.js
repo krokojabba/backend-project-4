@@ -14,7 +14,6 @@ program
     pageLoader(url, options.output)
       .then((message) => {
         console.log(message);
-        process.exit(0);
       })
       .catch((e) => {
         console.error(e);
