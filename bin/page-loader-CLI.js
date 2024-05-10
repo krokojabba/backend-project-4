@@ -12,7 +12,14 @@ program
   .option('-o, --output [dir]', 'output dir (default: "/home/user/current-dir")', process.cwd())
   .action((url, options) => {
     pageLoader(url, options.output)
-      .then((filePath) => console.log(filePath));
+      .then((message) => {
+        console.log(message);
+        process.exit(0);
+      })
+      .catch((e) => {
+        console.error(e);
+        process.exit(1);
+      });
   });
 
 program.parse();

@@ -59,7 +59,10 @@ const extractAssetsList = ($, extractProperty, mainUrl) => {
 
 const download = (assets, isSilent = true) => {
   const tasks = assets.flatMap(({ url, responseType }) => {
-    const promise = axios.get(url, { responseType })
+    const promise = axios.get(url, {
+      responseType,
+      validateStatus: (status) => status === 200,
+    })
       .then((response) => {
         debug(`${url} downloaded`);
         return {
@@ -70,11 +73,19 @@ const download = (assets, isSilent = true) => {
       })
       .catch((e) => {
         debug(`${url} download error: %O`, e);
-        return {
+
+        if (e.response) {
+          throw new Error(`${url}: ${e.response.status}, ${e.response.statusMessage}`);
+        } else if (e.request) {
+          throw new Error(`This site can’t be reached: "${url}".`);
+        } else {
+          throw new Error(`Error: ${e.message}`);
+        }
+        /* return {
           status: 'download error',
           error: e,
           url,
-        };
+        }; */
       });
     if (isSilent) return promise;
     return {
@@ -84,7 +95,9 @@ const download = (assets, isSilent = true) => {
   });
   if (isSilent) return Promise.all(tasks);
   const listrTasks = new Listr(tasks, { concurrent: true });
-  return listrTasks.run([]);
+  return listrTasks.run([]).catch((e) => {
+    throw new Error(e.message);
+  });
 };
 
 const save = (assets, output) => {
@@ -92,7 +105,11 @@ const save = (assets, output) => {
     if (status === 'downloaded') {
       return fs.writeFile(path.resolve(output, relativeFilePath), data, 'utf-8')
         .then(() => debug(`${relativeFilePath} is save`))
-        .catch((e) => debug(`${relativeFilePath} isn't save %O`, e));
+        .catch((e) => {
+          debug(`${relativeFilePath} isn't save %O`, e);
+          throw new Error(`Cannot save file ${path.resolve(output, relativeFilePath)}
+          ${e.message}`);
+        });
     }
     return [];
   });
@@ -160,8 +177,12 @@ const pageLoader = (url, output = process.cwd()) => {
       mainFile.resolvedData = modifyAssets(mainFile.resolvedData, assets);
       mainFile.data = mainFile.resolvedData.html();
       if (assets.some(({ status }) => status === 'downloaded')) {
-        debug(`create assets directory ${mainFile.assetsDir}`);
-        return fs.mkdir(path.resolve(output, mainFile.assetsDir));
+        return fs.mkdir(path.resolve(output, mainFile.assetsDir)).then(() => {
+          debug(`create assets directory ${mainFile.assetsDir}`);
+        }).catch((e) => {
+          throw new Error(`Cannot create assets directory ${mainFile.assetsDir}
+          ${e.message}`);
+        });
       }
       return Promise.resolve();
     })
@@ -169,7 +190,10 @@ const pageLoader = (url, output = process.cwd()) => {
       // console.log(assets);
       save([mainFile, ...assets], output);
     })
-    .then(() => `Page was successfully downloaded into ${path.resolve(output, mainFile.relativeFilePath)}`);
+    .then(() => `Page was successfully downloaded into ${path.resolve(output, mainFile.relativeFilePath)}`)
+    .catch((e) => {
+      throw e;
+    });
 };
 
 export default pageLoader;
