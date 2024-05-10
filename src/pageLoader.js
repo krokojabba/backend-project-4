@@ -94,9 +94,10 @@ const download = (assets, isSilent = true) => {
     };
   });
   if (isSilent) return Promise.all(tasks);
-  const listrTasks = new Listr(tasks, { concurrent: true });
+  const listrTasks = new Listr(tasks, { concurrent: true, exitOnError: false });
   return listrTasks.run([]).catch((e) => {
-    throw new Error(e.message);
+    // throw new Error(e.message);
+    return e.context;
   });
 };
 

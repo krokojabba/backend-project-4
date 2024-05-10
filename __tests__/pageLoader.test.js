@@ -8,134 +8,142 @@ import nock from 'nock';
 import pageLoader from '../src/pageLoader.js';
 
 const testRootDir = path.join(os.tmpdir(), 'page-loader');
+
+const test1 = {
+  name: 'test1',
+  url: 'https://ru.hexlet.io/courses',
+  expectFuctionResult: 'ru-hexlet-io-courses.html',
+  files: [
+    {
+      originalFileName: 'index.html',
+      originalDir: '',
+      link: '/courses',
+      expectFileName: 'ru-hexlet-io-courses.html',
+      expectDir: '',
+      contentType: 'application/json',
+    },
+    {
+      originalFileName: 'nodejs.jpeg',
+      originalDir: 'assets/professions',
+      link: '/assets/professions/nodejs.jpeg',
+      expectFileName: 'ru-hexlet-io-assets-professions-nodejs.jpeg',
+      expectDir: 'ru-hexlet-io-courses_files',
+      contentType: 'image/jpeg',
+    },
+    {
+      originalFileName: 'nodejs.png',
+      originalDir: 'assets/professions',
+      link: '/assets/professions/nodejs.png',
+      expectFileName: 'ru-hexlet-io-assets-professions-nodejs.png',
+      expectDir: 'ru-hexlet-io-courses_files',
+      contentType: 'image/png',
+    },
+  ],
+};
+
+const test2 = {
+  name: 'test2',
+  url: 'https://ru.hexlet.io/courses',
+  expectFuctionResult: 'ru-hexlet-io-courses.html',
+  files: [
+    {
+      originalFileName: 'index.html',
+      originalDir: '',
+      link: '/courses',
+      expectFileName: 'ru-hexlet-io-courses.html',
+      expectDir: '',
+      contentType: 'application/json',
+    },
+    {
+      originalFileName: 'nodejs.png',
+      originalDir: 'assets/professions',
+      link: '/assets/professions/nodejs.png',
+      expectFileName: 'ru-hexlet-io-assets-professions-nodejs.png',
+      expectDir: 'ru-hexlet-io-courses_files',
+      contentType: 'image/png',
+    },
+    {
+      originalFileName: 'application.css',
+      originalDir: 'assets',
+      link: '/assets/application.css',
+      expectFileName: 'ru-hexlet-io-assets-application.css',
+      expectDir: 'ru-hexlet-io-courses_files',
+      contentType: 'application/json',
+    },
+    {
+      originalFileName: 'index1.html',
+      originalDir: 'courses',
+      link: '/courses',
+      expectFileName: 'ru-hexlet-io-courses.html',
+      expectDir: 'ru-hexlet-io-courses_files',
+      contentType: 'application/json',
+    },
+    {
+      originalFileName: 'runtime.js',
+      originalDir: 'packs/js',
+      link: '/packs/js/runtime.js',
+      expectFileName: 'ru-hexlet-io-packs-js-runtime.js',
+      expectDir: 'ru-hexlet-io-courses_files',
+      contentType: 'application/json',
+    },
+  ],
+};
+
+const test3BadAssert = {
+  name: 'test3_bad_assert',
+  url: 'https://ru.hexlet.io/courses',
+  expectFuctionResult: 'ru-hexlet-io-courses.html',
+  files: [
+    {
+      originalFileName: 'index.html',
+      originalDir: '',
+      link: '/courses',
+      expectFileName: 'ru-hexlet-io-courses.html',
+      expectDir: '',
+      contentType: 'application/json',
+    },
+    {
+      originalFileName: 'nodejs.png',
+      originalDir: 'assets/professions',
+      link: '/assets/professions/nodejs.png',
+      expectFileName: 'ru-hexlet-io-assets-professions-nodejs.png',
+      expectDir: 'ru-hexlet-io-courses_files',
+      contentType: 'image/png',
+      notAvailable: true,
+    },
+    {
+      originalFileName: 'application.css',
+      originalDir: 'assets',
+      link: '/assets/application.css',
+      expectFileName: 'ru-hexlet-io-assets-application.css',
+      expectDir: 'ru-hexlet-io-courses_files',
+      contentType: 'application/json',
+    },
+    {
+      originalFileName: 'index1.html',
+      originalDir: 'courses',
+      link: '/courses',
+      expectFileName: 'ru-hexlet-io-courses.html',
+      expectDir: 'ru-hexlet-io-courses_files',
+      contentType: 'application/json',
+    },
+    {
+      originalFileName: 'runtime.js',
+      originalDir: 'packs/js',
+      link: '/packs/js/runtime.js',
+      expectFileName: 'ru-hexlet-io-packs-js-runtime.js',
+      expectDir: 'ru-hexlet-io-courses_files',
+      contentType: 'application/json',
+    },
+  ],
+};
+
 const testData = [
-  {
-    name: 'test1',
-    url: 'https://ru.hexlet.io/courses',
-    expectFuctionResult: 'ru-hexlet-io-courses.html',
-  },
-  {
-    name: 'test2',
-    url: 'https://ru.hexlet.io/courses',
-    expectFuctionResult: 'ru-hexlet-io-courses.html',
-  },
-  {
-    name: 'test3_bad_assert',
-    url: 'https://ru.hexlet.io/courses',
-    expectFuctionResult: 'ru-hexlet-io-courses.html',
-  },
+  test1,
+  test2,
+  test3BadAssert,
 ];
-testData[0].files = [
-  {
-    originalFileName: 'index.html',
-    originalDir: '',
-    link: '/courses',
-    expectFileName: 'ru-hexlet-io-courses.html',
-    expectDir: '',
-    contentType: 'application/json',
-  },
-  {
-    originalFileName: 'nodejs.jpeg',
-    originalDir: 'assets/professions',
-    link: '/assets/professions/nodejs.jpeg',
-    expectFileName: 'ru-hexlet-io-assets-professions-nodejs.jpeg',
-    expectDir: 'ru-hexlet-io-courses_files',
-    contentType: 'image/jpeg',
-  },
-  {
-    originalFileName: 'nodejs.png',
-    originalDir: 'assets/professions',
-    link: '/assets/professions/nodejs.png',
-    expectFileName: 'ru-hexlet-io-assets-professions-nodejs.png',
-    expectDir: 'ru-hexlet-io-courses_files',
-    contentType: 'image/png',
-  },
-];
-testData[1].files = [
-  {
-    originalFileName: 'index.html',
-    originalDir: '',
-    link: '/courses',
-    expectFileName: 'ru-hexlet-io-courses.html',
-    expectDir: '',
-    contentType: 'application/json',
-  },
-  {
-    originalFileName: 'nodejs.png',
-    originalDir: 'assets/professions',
-    link: '/assets/professions/nodejs.png',
-    expectFileName: 'ru-hexlet-io-assets-professions-nodejs.png',
-    expectDir: 'ru-hexlet-io-courses_files',
-    contentType: 'image/png',
-  },
-  {
-    originalFileName: 'application.css',
-    originalDir: 'assets',
-    link: '/assets/application.css',
-    expectFileName: 'ru-hexlet-io-assets-application.css',
-    expectDir: 'ru-hexlet-io-courses_files',
-    contentType: 'application/json',
-  },
-  {
-    originalFileName: 'index1.html',
-    originalDir: 'courses',
-    link: '/courses',
-    expectFileName: 'ru-hexlet-io-courses.html',
-    expectDir: 'ru-hexlet-io-courses_files',
-    contentType: 'application/json',
-  },
-  {
-    originalFileName: 'runtime.js',
-    originalDir: 'packs/js',
-    link: '/packs/js/runtime.js',
-    expectFileName: 'ru-hexlet-io-packs-js-runtime.js',
-    expectDir: 'ru-hexlet-io-courses_files',
-    contentType: 'application/json',
-  },
-];
-testData[2].files = [
-  {
-    originalFileName: 'index.html',
-    originalDir: '',
-    link: '/courses',
-    expectFileName: 'ru-hexlet-io-courses.html',
-    expectDir: '',
-    contentType: 'application/json',
-  },
-  {
-    originalFileName: 'nodejs.png',
-    originalDir: 'assets/professions',
-    link: '/assets/professions/nodejs.png',
-    expectFileName: 'ru-hexlet-io-assets-professions-nodejs.png',
-    expectDir: 'ru-hexlet-io-courses_files',
-    contentType: 'image/png',
-    notAvailable: true,
-  },
-  {
-    originalFileName: 'application.css',
-    originalDir: 'assets',
-    link: '/assets/application.css',
-    expectFileName: 'ru-hexlet-io-assets-application.css',
-    expectDir: 'ru-hexlet-io-courses_files',
-    contentType: 'application/json',
-  },
-  {
-    originalFileName: 'index1.html',
-    originalDir: 'courses',
-    link: '/courses',
-    expectFileName: 'ru-hexlet-io-courses.html',
-    expectDir: 'ru-hexlet-io-courses_files',
-    contentType: 'application/json',
-  },
-  {
-    originalFileName: 'runtime.js',
-    originalDir: 'packs/js',
-    link: '/packs/js/runtime.js',
-    expectFileName: 'ru-hexlet-io-packs-js-runtime.js',
-    expectDir: 'ru-hexlet-io-courses_files',
-    contentType: 'application/json',
-  },
-];
+
 let resultFilePath;
 const testDir = {};
 const scopes = {};
